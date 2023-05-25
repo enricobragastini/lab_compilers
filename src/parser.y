@@ -9,6 +9,7 @@
 
     void printSet(int index);
     int *getBitPositions(unsigned int num, int *count, int *size);
+    unsigned int setBit(unsigned int num, int i);
     
     unsigned int sets[26];
 
@@ -17,12 +18,14 @@
 %union{
     char chr;
     unsigned int setBits;
+    int index;
 }
 
 %token <chr> VARIABLE 
 %token <setBits> BITS
-%token ADD UNION DIFFERENCE COMPLEMENT
+%token ADD UNION DIFFERENCE COMPLEMENT AGGIUNGI AD
 %token <str> ASSIGN SET
+%token <index> SET_INDEX
 
 %%
 
@@ -35,13 +38,12 @@ statement:
     | operation
     ;
 
-assignment:
-    | VARIABLE ASSIGN SET BITS {int i = $1-'A'; sets[i] = $4; printSet(i);}
+assignment: VARIABLE ASSIGN SET BITS  {int i = $1-'A'; sets[i] = $4; printSet(i);}
     ;
 
-operation:
-    |
+operation: AGGIUNGI 'i' SET_INDEX AD SET VARIABLE     {int i = $6-'A'; sets[i] = setBit(sets[i], $3); printSet(i);}
     ;
+
 
 %%
 
@@ -53,6 +55,8 @@ int main(void){
 void yyerror(char const *s) {
    fprintf(stderr, "%s\n", s);
 }
+
+
 
 void printSet(int index){
     int count;
@@ -95,4 +99,9 @@ int* getBitPositions(unsigned int num, int *count, int *size) {
     }
 
     return positions;
+}
+
+unsigned int setBit(unsigned int num, int i) {
+    unsigned int mask = 1 << i;
+    return num | mask;
 }

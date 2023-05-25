@@ -6,22 +6,24 @@
     unsigned int strToUnsignedInt(char* str);
 %}
 
+%option yylineno
 
 %%
 
-[A-Z]               { yylval.chr = yytext[0]; return VARIABLE; }
-s                   { return SET; }
-[01]{32}            { yylval.setBits = strToUnsignedInt(yytext); return BITS; }
+[A-Z]                       { yylval.chr = yytext[0]; return VARIABLE; }
+s                           { return SET; }
+[01]{32}                    { yylval.setBits = strToUnsignedInt(yytext); return BITS; }
 
-ad                  { return ADD; }
-u                   { return UNION; }
-d                   { return DIFFERENCE; }
--                   { return COMPLEMENT; }
+Aggiungi                    { return AGGIUNGI; }
+ad                          { return AD; }
+i                           { return 'i'; }
+[0-9]|[1-2][0-9]|3[0-1]     { yylval.index = atoi(yytext); return SET_INDEX; }
 
-=                   { return ASSIGN; }
+=                           { return ASSIGN; }
 
-\n                  { return '\n'; }
-[ \t]               { /* Ignore whitespace */ }
+\n                          { return '\n'; }
+[ \t]                       { /* Ignore whitespace */ }
+
 
 %%
 
