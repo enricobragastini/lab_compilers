@@ -18,11 +18,13 @@ Aggiungi                    { return AGGIUNGI; }
 ad                          { return AD; }
 i                           { return 'i'; }
 [0-9]|[1-2][0-9]|3[0-1]     { yylval.index = atoi(yytext); return SET_INDEX; }
-
+\(                          { return LPAR; }
+\)                          { return RPAR; }
+u                           { return UNION; }
+-                           { return SUB; }
+~                           { return COMPLEMENT; }
 =                           { return ASSIGN; }
-
-\n                          { return '\n'; }
-[ \t]                       { /* Ignore whitespace */ }
+[ \n]                       { /* Ignore whitespace */ }
 
 
 %%
