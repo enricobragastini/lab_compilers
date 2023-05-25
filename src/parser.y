@@ -11,6 +11,7 @@
     int *getBitPositions(unsigned int num, int *count, int *size);
     unsigned int setBit(unsigned int num, int i);
     unsigned int Union(unsigned int A, unsigned int B);
+    unsigned int Intersection(unsigned int A, unsigned int B);
     unsigned int Subtraction(unsigned int A, unsigned int B);
 
     unsigned int sets[26];
@@ -26,7 +27,7 @@
 %token <chr> VARIABLE 
 %token <setBits> BITS
 %token AGGIUNGI AD LPAR RPAR
-%token UNION SUB COMPLEMENT
+%token UNION INTERSECTION SUB COMPLEMENT
 %token <str> ASSIGN SET
 %token <index> SET_INDEX
 %type <setBits> expr
@@ -44,6 +45,7 @@ expr:
     VARIABLE                                        { int i=$1-'A'; $$ = sets[i]; }
     | AGGIUNGI 'i' SET_INDEX AD SET VARIABLE        { int i = $6-'A'; sets[i] = setBit(sets[i], $3); $$ = sets[i]; }
     | expr UNION expr                               { $$ = Union($1, $3);};
+    | expr INTERSECTION expr                        { $$ = Intersection($1, $3);};
     | expr SUB expr                                 { $$ = Subtraction($1, $3);}
     | LPAR expr RPAR                                { $$ = $2; }
     | COMPLEMENT expr                               { $$ = ~$2; }
@@ -112,6 +114,10 @@ unsigned int setBit(unsigned int num, int i) {
 
 unsigned int Union(unsigned int A, unsigned int B) {
     return A | B;
+}
+
+unsigned int Intersection(unsigned int A, unsigned int B) {
+    return A & B;
 }
 
 unsigned int Subtraction(unsigned int A, unsigned int B) {

@@ -21,6 +21,7 @@ i                           { return 'i'; }
 \(                          { return LPAR; }
 \)                          { return RPAR; }
 u                           { return UNION; }
+in                          { return INTERSECTION; }
 -                           { return SUB; }
 ~                           { return COMPLEMENT; }
 =                           { return ASSIGN; }
