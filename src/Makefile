@@ -14,7 +14,7 @@ lex.yy.c: lexer.l y.tab.h
 	$(LEX) lexer.l
 
 y.tab.c y.tab.h: parser.y
-	$(YACC) -d parser.y
+	$(YACC) -d parser.y -Wcounterexamples
 
 clean:
 	rm -f lex.yy.c y.tab.c y.tab.h $(TARGET)

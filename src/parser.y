@@ -26,30 +26,38 @@
 
 %token <chr> VARIABLE 
 %token <setBits> BITS
-%token AGGIUNGI AD LPAR RPAR
-%token UNION INTERSECTION SUB COMPLEMENT
 %token <str> ASSIGN SET
 %token <index> SET_INDEX
 %type <setBits> expr
+%type <setBits> term
+%type <setBits> factor
+%token AGGIUNGI AD LPAR RPAR UNION INTERSECTION SUB COMPLEMENT
 
 %%
 
-line: line cmd | cmd;
-
-cmd: 
-    VARIABLE ASSIGN SET BITS    {int i = $1-'A'; sets[i] = $4; printSet(sets[i]);}
-    | expr                      {printSet($1);}
+line: line cmd
+    | cmd
     ;
 
-expr: 
-    VARIABLE                                        { int i=$1-'A'; $$ = sets[i]; }
-    | AGGIUNGI 'i' SET_INDEX AD SET VARIABLE        { int i = $6-'A'; sets[i] = setBit(sets[i], $3); $$ = sets[i]; }
-    | expr UNION expr                               { $$ = Union($1, $3);};
-    | expr INTERSECTION expr                        { $$ = Intersection($1, $3);};
-    | expr SUB expr                                 { $$ = Subtraction($1, $3);}
-    | LPAR expr RPAR                                { $$ = $2; }
-    | COMPLEMENT expr                               { $$ = ~$2; }
+cmd: VARIABLE ASSIGN SET BITS                   { int i = $1 - 'A'; sets[i] = $4; printSet(sets[i]); }
+    | expr                                      { printSet($1); }
     ;
+
+expr: term                                                
+    | expr UNION term                           { $$ = Union($1, $3);}
+    | expr INTERSECTION term                    { $$ = Intersection($1, $3);}
+    | expr SUB term                             { $$ = Subtraction($1, $3);}
+    | COMPLEMENT term                           { $$ = ~$2; }
+    ;
+
+term: factor
+    | AGGIUNGI 'i' SET_INDEX AD SET VARIABLE    { int i = $6 - 'A'; sets[i] = setBit(sets[i], $3); $$ = sets[i]; }
+    | LPAR expr RPAR                            { $$ = $2; }
+    ;
+
+factor: VARIABLE                                { int i= $1 - 'A'; $$ = sets[i]; }
+    ;
+
 
 %%
 
