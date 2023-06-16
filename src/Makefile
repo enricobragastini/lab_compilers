@@ -1,7 +1,7 @@
 LEX = lex
 YACC = yacc
 CC = gcc
-CFLAGS = -lfl
+CFLAGS = -g -lfl
 
 TARGET = set_language
 

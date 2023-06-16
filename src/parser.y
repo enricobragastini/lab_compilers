@@ -1,11 +1,13 @@
 %{
     #include <stdio.h>
     #include <stdlib.h>
+    #include <string.h>
 
     int yylex();
     int yyparse();
     void yyerror(char const *s);
     int main(void);
+    extern FILE *yyin;
 
     void printSet(unsigned int);
     int *getBitPositions(unsigned int num, int *count, int *size);
@@ -16,11 +18,37 @@
 
     unsigned int sets[26];
 
+    typedef union {
+        int ival;
+        char chr;
+        char *str;
+    } node_content_t;
+
+    typedef enum {
+        INTEGER, CHAR, STRING
+    } node_content_e;
+
+
+    typedef struct node node_t;
+
+    struct node {
+        node_content_t val;
+        node_content_e type;
+        unsigned int res;
+        unsigned int size;
+        node_t *a;
+        node_t *b; 
+    };
+
+    node_t *node(node_content_t val, node_content_e type);
+    void add_child(node_t *parent, node_t *child);
+    void print_node(node_t *n, unsigned int indent);
 %}
 
 %union{
     char chr;
     unsigned int setBits;
+    struct node *node;
     int index;
 }
 
@@ -28,9 +56,7 @@
 %token <setBits> BITS
 %token <str> ASSIGN SET
 %token <index> SET_INDEX
-%type <setBits> expr
-%type <setBits> term
-%type <setBits> factor
+%type <node> expr term factor set_index
 %token AGGIUNGI AD LPAR RPAR UNION INTERSECTION SUB COMPLEMENT
 
 %%
@@ -39,29 +65,74 @@ line: line cmd
     | cmd
     ;
 
-cmd: VARIABLE ASSIGN SET BITS                   { int i = $1 - 'A'; sets[i] = $4; printSet(sets[i]); }
-    | expr                                      { printSet($1); }
+cmd: VARIABLE ASSIGN SET BITS                   
+                                                {   int i = $1 - 'A'; 
+                                                    sets[i] = $4; 
+                                                    printSet(sets[i]); }
+    | expr                                      
+                                                {   print_node($1, 0); printSet($1->res); }
     ;
 
-expr: term                                                
-    | expr UNION term                           { $$ = Union($1, $3);}
-    | expr INTERSECTION term                    { $$ = Intersection($1, $3);}
-    | expr SUB term                             { $$ = Subtraction($1, $3);}
-    | COMPLEMENT term                           { $$ = ~$2; }
+expr: COMPLEMENT term                           
+                                                {   node_t *n = node((node_content_t) "Complemento", STRING);
+                                                    add_child(n, $2);
+                                                    n->res = ~($2->res);
+                                                    $$ = n; }
+    | expr UNION term                           
+                                                {   node_t *n = node((node_content_t) "Unione", STRING);
+                                                    add_child(n, $1);
+                                                    add_child(n, $3);
+                                                    n->res = Union($1->res, $3->res);
+                                                    $$ = n; }
+    | expr INTERSECTION term                    
+                                                {   node_t *n = node((node_content_t) "Intersezione", STRING);
+                                                    add_child(n, $1);
+                                                    add_child(n, $3);
+                                                    n->res = Intersection($1->res, $3->res);
+                                                    $$ = n; }
+    | expr SUB term                             
+                                                {   node_t *n = node((node_content_t) "Sottrazione", STRING);
+                                                    add_child(n, $1);
+                                                    add_child(n, $3);
+                                                    n->res = Subtraction($1->res, $3->res);
+                                                    $$ = n; }
+    | term
+                                                {   $$ = $1; }
     ;
 
-term: factor
-    | AGGIUNGI 'i' SET_INDEX AD SET VARIABLE    { int i = $6 - 'A'; sets[i] = setBit(sets[i], $3); $$ = sets[i]; }
-    | LPAR expr RPAR                            { $$ = $2; }
+term: AGGIUNGI 'i' set_index AD SET factor    
+                                                {   int i = $6->val.chr - 'A'; 
+                                                    sets[i] = setBit(sets[i], $3->val.ival); 
+                                                    node_t *n = node((node_content_t) "Aggiungi", STRING);
+                                                    add_child(n, $3);
+                                                    add_child(n, $6);
+                                                    n->res = sets[i];
+                                                    $$ = n; }
+    | LPAR expr RPAR                            
+                                                {   $$ = $2; }
+    | factor
+                                                {   $$ = $1; }
     ;
 
-factor: VARIABLE                                { int i= $1 - 'A'; $$ = sets[i]; }
+set_index: SET_INDEX                
+                                                {   node_t *n = node((node_content_t) $1, INTEGER);
+                                                    $$ = n; }
+    ;
+
+factor: VARIABLE                                {   int i= $1 - 'A';
+                                                    node_t *n = node((node_content_t) $1, CHAR);
+                                                    n->res = sets[i];
+                                                    $$ = n; }
     ;
 
 
 %%
 
 int main(void){
+    FILE *fp; 
+    int i;
+    fp=fopen("test.txt","r");
+    yyin=fp;
     yyparse();
     return 0;
 }
@@ -142,3 +213,56 @@ unsigned int Subtraction(unsigned int A, unsigned int B) {
     
     return A;
 }
+
+node_t *node(node_content_t val, node_content_e type){
+    node_t *node = malloc(sizeof(node_t));
+    node->type = type;
+
+    if(type == STRING)
+        node->val = (node_content_t) strdup(val.str);
+    else
+        node->val = val;
+    
+    node->size = 0;
+    node->res = 0;
+    node->a = NULL;
+    node->b = NULL;
+
+    return node;
+}
+
+void add_child(node_t *parent, node_t *child){
+    if (parent->size == 0) {
+        parent->a = child;
+        parent->size = parent->size + 1;
+    } else if (parent->size == 1) {
+        parent->b = child;
+        parent->size = parent->size + 1;
+    } else {
+        yyerror("Can't add a child: node already full of children.\n");
+    }
+}
+
+void print_node(node_t *n, unsigned int indent) {
+    char *indentation = (char *)malloc(sizeof(char) * (indent + 1));
+
+    for (unsigned int i = 0; i < indent; i++) {
+        indentation[i] = ' ';
+    }
+    indentation[indent] = '\0';
+    
+    switch (n->type) {
+        case STRING:    printf("%s%s\n", indentation, n->val.str); break;
+        case INTEGER:   printf("%s%d\n", indentation, n->val.ival); break;
+        case CHAR:      printf("%s%c\n", indentation, n->val.chr); break;
+    }
+
+    free(indentation);
+    indentation = NULL;
+
+    if (n->a)
+        print_node(n->a, indent+2);
+    if (n->b)
+        print_node(n->b, indent+2);
+}
+
