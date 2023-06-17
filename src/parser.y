@@ -9,7 +9,7 @@
     int main(void);
     extern FILE *yyin;
 
-    void printSet(unsigned int);
+    char *setToStr(unsigned int);
     int *getBitPositions(unsigned int num, int *count, int *size);
     unsigned int setBit(unsigned int num, int i);
     unsigned int Union(unsigned int A, unsigned int B);
@@ -68,9 +68,9 @@ line: line cmd
 cmd: VARIABLE ASSIGN SET BITS                   
                                                 {   int i = $1 - 'A'; 
                                                     sets[i] = $4; 
-                                                    printSet(sets[i]); }
+                                                    printf("%c: %s\n", $1, setToStr(sets[i])); }
     | expr                                      
-                                                {   print_node($1, 0); printSet($1->res); }
+                                                {   printf("\n"); print_node($1, 0); printf("\nResult: %s\n", setToStr($1->res));}
     ;
 
 expr: COMPLEMENT term                           
@@ -143,18 +143,23 @@ void yyerror(char const *s) {
 
 
 
-void printSet(unsigned int set){
+char *setToStr(unsigned int set){
     int count;
     int size;
     int *positions = getBitPositions(set, &count, &size);
 
-    printf("SET : ");
-    for (int i = 0; i < size; i++) {
-        printf("%d ", positions[i]);
-    }
-    printf("\n");
+    char *str = (char *) malloc(sizeof(char));
+    int len = 1;
 
+    char buffer[4];
+    for (int i = 0; i < size; i++) {
+        sprintf(buffer, "%d ", positions[i]);
+        len += strlen(buffer);
+        str = (char *) realloc(str, sizeof(char) * len);
+        strcat(str, buffer);
+    }
     free(positions);
+    return str;
 }
 
 int* getBitPositions(unsigned int num, int *count, int *size) {
