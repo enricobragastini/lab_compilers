@@ -14,17 +14,17 @@
     unsigned int setBit(unsigned int num, int i);
     unsigned int Union(unsigned int A, unsigned int B);
     unsigned int Intersection(unsigned int A, unsigned int B);
-    unsigned int Subtraction(unsigned int A, unsigned int B);
+    unsigned int Difference(unsigned int A, unsigned int B);
 
     unsigned int sets[26];
 
-    typedef union {
+    typedef union {                 // Types for node content
         int ival;
         char chr;
         char *str;
     } node_content_t;
 
-    typedef enum {
+    typedef enum {                  // Enum for node content types
         INTEGER, CHAR, STRING
     } node_content_e;
 
@@ -32,12 +32,12 @@
     typedef struct node node_t;
 
     struct node {
-        node_content_t val;
-        node_content_e type;
-        unsigned int res;
-        unsigned int size;
-        node_t *a;
-        node_t *b; 
+        node_content_t val;         // Content
+        node_content_e type;        // Content type (enum)
+        unsigned int res;           // Result set for node subtree
+        unsigned int size;          // Number of children
+        node_t *a;                  // First child
+        node_t *b;                  // Second child
     };
 
     node_t *node(node_content_t val, node_content_e type);
@@ -57,7 +57,7 @@
 %token <str> ASSIGN SET
 %token <index> SET_INDEX
 %type <node> expr term cterm factor set_index
-%token AGGIUNGI AD LPAR RPAR UNION INTERSECTION SUB COMPLEMENT EOL
+%token AGGIUNGI AD LPAR RPAR UNION INTERSECTION DIF COMPLEMENT EOL
 
 %%
 
@@ -85,11 +85,11 @@ expr: expr INTERSECTION cterm
                                                     add_child(n, $3);
                                                     n->res = Intersection($1->res, $3->res);
                                                     $$ = n; }
-    | expr SUB cterm                             
-                                                {   node_t *n = node((node_content_t) "Sottrazione", STRING);
+    | expr DIF cterm                             
+                                                {   node_t *n = node((node_content_t) "Differenza", STRING);
                                                     add_child(n, $1);
                                                     add_child(n, $3);
-                                                    n->res = Subtraction($1->res, $3->res);
+                                                    n->res = Difference($1->res, $3->res);
                                                     $$ = n; }
     | expr UNION cterm                           
                                                 {   node_t *n = node((node_content_t) "Unione", STRING);
@@ -147,6 +147,7 @@ void yyerror(char const *s) {
 }
 
 
+// Converts set to string representation
 char *setToStr(unsigned int set){
     int size;
     int *positions = getBitPositions(set, &size);
@@ -166,6 +167,7 @@ char *setToStr(unsigned int set){
     
     return str;
 }
+
 
 int* getBitPositions(unsigned int num, int *size) {
     // Count the number of 1 bits in the number
@@ -209,7 +211,7 @@ unsigned int Intersection(unsigned int A, unsigned int B) {
     return A & B;
 }
 
-unsigned int Subtraction(unsigned int A, unsigned int B) {
+unsigned int Difference(unsigned int A, unsigned int B) {
     int i;
     unsigned int mask;
         
@@ -233,6 +235,7 @@ node_t *node(node_content_t val, node_content_e type){
     else
         node->val = val;
     
+    // Initially the node is empty
     node->size = 0;
     node->res = 0;
     node->a = NULL;

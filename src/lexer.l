@@ -22,7 +22,7 @@ i                           { return 'i'; }
 \)                          { return RPAR; }
 u                           { return UNION; }
 in                          { return INTERSECTION; }
--                           { return SUB; }
+-                           { return DIF; }
 ~                           { return COMPLEMENT; }
 =                           { return ASSIGN; }
 ;                           { return EOL; }

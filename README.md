@@ -26,8 +26,8 @@ Ecco un esempio di istruzione: `A u B;`
 Si assuma di avere `A = 11000000000000000000000000001001` e
 `B = 11100000000000000000000000000001`
 `A u B = 11100000000000000000000000001001`
-    
-Le istruzioni possono essere concatenate per formare espressioni più complesse utilizzando le parentesi e rispettando le priorità degli operatori. Ecco alcuni esempi di espressioni valide:
+
+Le istruzioni possono essere concatenate per formare espressioni più complesse, utilizzando anche le parentesi. Ecco alcuni esempi di espressioni valide:
 -   `(A u B) u (B-A);`
 -   `(Aggiungi i3 ad sA) u B u (C-D);`
 
