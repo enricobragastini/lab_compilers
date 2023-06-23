@@ -25,7 +25,8 @@ in                          { return INTERSECTION; }
 -                           { return SUB; }
 ~                           { return COMPLEMENT; }
 =                           { return ASSIGN; }
-[ \n]                       { /* Ignore whitespace */ }
+;                           { return EOL; }
+[ \t\n]                       { /* Ignore whitespace */ }
 
 
 %%

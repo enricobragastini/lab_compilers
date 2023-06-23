@@ -10,7 +10,7 @@
     extern FILE *yyin;
 
     char *setToStr(unsigned int);
-    int *getBitPositions(unsigned int num, int *count, int *size);
+    int *getBitPositions(unsigned int num, int *size);
     unsigned int setBit(unsigned int num, int i);
     unsigned int Union(unsigned int A, unsigned int B);
     unsigned int Intersection(unsigned int A, unsigned int B);
@@ -56,49 +56,57 @@
 %token <setBits> BITS
 %token <str> ASSIGN SET
 %token <index> SET_INDEX
-%type <node> expr term factor set_index
-%token AGGIUNGI AD LPAR RPAR UNION INTERSECTION SUB COMPLEMENT
+%type <node> expr term cterm factor set_index
+%token AGGIUNGI AD LPAR RPAR UNION INTERSECTION SUB COMPLEMENT EOL
 
 %%
 
-line: line cmd
-    | cmd
-    ;
+line: 
+    | line cmd EOL;
 
 cmd: VARIABLE ASSIGN SET BITS                   
                                                 {   int i = $1 - 'A'; 
                                                     sets[i] = $4; 
-                                                    printf("%c: %s\n", $1, setToStr(sets[i])); }
+                                                    char *setString = setToStr(sets[i]);
+                                                    printf("%c: %s\n", $1, setString); 
+                                                    free(setString); }
     | expr                                      
-                                                {   printf("\n"); print_node($1, 0); printf("\nResult: %s\n", setToStr($1->res));}
+                                                {   printf("\n"); 
+                                                    print_node($1, 0); 
+                                                    char *setString = setToStr($1->res);
+                                                    printf("Result: %s\n\n", setString); 
+                                                    free(setString); }
     ;
 
-expr: COMPLEMENT term                           
-                                                {   node_t *n = node((node_content_t) "Complemento", STRING);
-                                                    add_child(n, $2);
-                                                    n->res = ~($2->res);
-                                                    $$ = n; }
-    | expr UNION term                           
-                                                {   node_t *n = node((node_content_t) "Unione", STRING);
-                                                    add_child(n, $1);
-                                                    add_child(n, $3);
-                                                    n->res = Union($1->res, $3->res);
-                                                    $$ = n; }
-    | expr INTERSECTION term                    
+
+expr: expr INTERSECTION cterm                    
                                                 {   node_t *n = node((node_content_t) "Intersezione", STRING);
                                                     add_child(n, $1);
                                                     add_child(n, $3);
                                                     n->res = Intersection($1->res, $3->res);
                                                     $$ = n; }
-    | expr SUB term                             
+    | expr SUB cterm                             
                                                 {   node_t *n = node((node_content_t) "Sottrazione", STRING);
                                                     add_child(n, $1);
                                                     add_child(n, $3);
                                                     n->res = Subtraction($1->res, $3->res);
                                                     $$ = n; }
-    | term
+    | expr UNION cterm                           
+                                                {   node_t *n = node((node_content_t) "Unione", STRING);
+                                                    add_child(n, $1);
+                                                    add_child(n, $3);
+                                                    n->res = Union($1->res, $3->res);
+                                                    $$ = n; }
+    | cterm
                                                 {   $$ = $1; }
     ;
+
+cterm: COMPLEMENT term                           
+                                                {   node_t *n = node((node_content_t) "Complemento", STRING);
+                                                    add_child(n, $2);
+                                                    n->res = ~($2->res);
+                                                    $$ = n; }
+    | term;
 
 term: AGGIUNGI 'i' set_index AD SET factor    
                                                 {   int i = $6->val.chr - 'A'; 
@@ -110,6 +118,7 @@ term: AGGIUNGI 'i' set_index AD SET factor
                                                     $$ = n; }
     | LPAR expr RPAR                            
                                                 {   $$ = $2; }
+    
     | factor
                                                 {   $$ = $1; }
     ;
@@ -129,10 +138,6 @@ factor: VARIABLE                                {   int i= $1 - 'A';
 %%
 
 int main(void){
-    FILE *fp; 
-    int i;
-    fp=fopen("test.txt","r");
-    yyin=fp;
     yyparse();
     return 0;
 }
@@ -142,39 +147,39 @@ void yyerror(char const *s) {
 }
 
 
-
 char *setToStr(unsigned int set){
-    int count;
     int size;
-    int *positions = getBitPositions(set, &count, &size);
+    int *positions = getBitPositions(set, &size);
 
-    char *str = (char *) malloc(sizeof(char));
-    int len = 1;
+    char *str;
+    if(size > 0){
+        str = (char *) malloc(sizeof(char) * (3*size + 1));
+        char *ptr = str;
 
-    char buffer[4];
-    for (int i = 0; i < size; i++) {
-        sprintf(buffer, "%d ", positions[i]);
-        len += strlen(buffer);
-        str = (char *) realloc(str, sizeof(char) * len);
-        strcat(str, buffer);
+        for(int i = 0; i<size; i++){
+            ptr += sprintf(ptr, " %d", positions[i]);
+        }
+    } else {
+        str = strdup("Empty set.");
     }
-    free(positions);
+    
+    
     return str;
 }
 
-int* getBitPositions(unsigned int num, int *count, int *size) {
+int* getBitPositions(unsigned int num, int *size) {
     // Count the number of 1 bits in the number
-    *count = 0;
+    int count = 0;
     unsigned int temp = num;
     while (temp > 0) {
         if (temp & 1) {
-            (*count)++;
+            count++;
         }
         temp >>= 1;
     }
 
     // Set the size of the result array
-    *size = *count;
+    *size = count;
 
     // Allocate memory for the result array
     int *positions = (int *) malloc(sizeof(int) * (*size));
